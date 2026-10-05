@@ -2,7 +2,7 @@ spring:
   application:
     name: issue-tracker
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/issuetracker}
+    url: ${DB_URL:jdbc:postgresql://localhost:${DB_PORT:5432}/issuetracker}
     username: ${DB_USERNAME:issuetracker}
     password: ${DB_PASSWORD:issuetracker}
   jpa:

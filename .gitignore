@@ -5,6 +5,7 @@ backend/application-local.yml
 # Frontend
 node_modules/
 frontend/dist/
+*.tsbuildinfo
 
 # IDE and OS
 .idea/

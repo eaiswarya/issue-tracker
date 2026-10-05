@@ -1,4 +1,4 @@
-# Copy to application-local.yml (git-ignored) and adjust for your machine.
+# Copy to backend/application-local.yml (git-ignored) and adjust for your machine.
 # If another PostgreSQL already uses port 5432, start the container with
 # DB_PORT=5433 docker compose up -d db and set the same port below.
 spring:

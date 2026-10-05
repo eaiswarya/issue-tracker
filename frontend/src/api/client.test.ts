@@ -14,7 +14,9 @@ describe('apiClient', () => {
   });
 
   it('rejects on error responses', async () => {
-    server.use(http.get('*/api/v1/broken', () => HttpResponse.json({ status: 500 }, { status: 500 })));
+    server.use(
+      http.get('*/api/v1/broken', () => HttpResponse.json({ status: 500 }, { status: 500 })),
+    );
 
     await expect(apiClient.get('/broken')).rejects.toMatchObject({ response: { status: 500 } });
   });

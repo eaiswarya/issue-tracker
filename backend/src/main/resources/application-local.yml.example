@@ -1,0 +1,6 @@
+# Copy to application-local.yml (git-ignored) and adjust for your machine.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/issuetracker
+    username: issuetracker
+    password: issuetracker

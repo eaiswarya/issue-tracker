@@ -1,0 +1,17 @@
+# Backend
+backend/target/
+backend/application-local.yml
+
+# Frontend
+node_modules/
+frontend/dist/
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Env files
+.env
+.env.*

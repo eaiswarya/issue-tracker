@@ -6,3 +6,10 @@ spring:
     url: jdbc:postgresql://localhost:5432/issuetracker
     username: issuetracker
     password: issuetracker
+
+# Dev profile only (-Dspring-boot.run.profiles=dev): seed an ADMIN user on startup.
+# app:
+#   seed:
+#     admin:
+#       email: admin@example.com
+#       password: choose-a-dev-password

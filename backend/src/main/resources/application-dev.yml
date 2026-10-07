@@ -1,0 +1,8 @@
+# Dev profile: ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+# Seeds one ADMIN user when ADMIN_EMAIL and ADMIN_PASSWORD are set (environment or application-local.yml).
+app:
+  seed:
+    admin:
+      name: ${ADMIN_NAME:Admin}
+      email: ${ADMIN_EMAIL:}
+      password: ${ADMIN_PASSWORD:}

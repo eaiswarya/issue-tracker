@@ -57,4 +57,70 @@ class LoginServiceTest {
         // Spends the same BCrypt time as a real check, so response timing does not reveal unknown emails.
         verify(passwordEncoder).matches(eq("whatever"), any());
     }
+
+    @Test
+    void locksTheAccountForFifteenMinutesOnTheFifthFailureWithinFifteenMinutes() {
+        failLogins(4, Duration.ofMinutes(3));
+
+        assertThatThrownBy(this::loginWithWrongPassword)
+            .isInstanceOfSatisfying(AccountLockedException.class,
+                e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofMinutes(15)));
+    }
+
+    @Test
+    void refusesEvenTheRightPasswordWhileLocked() {
+        failLogins(5, Duration.ZERO);
+        clock.advance(Duration.ofMinutes(10));
+
+        assertThatThrownBy(this::loginWithRightPassword)
+            .isInstanceOfSatisfying(AccountLockedException.class,
+                e -> assertThat(e.getRetryAfter()).isEqualTo(Duration.ofMinutes(5)));
+        verify(tokenService, never()).issue(any());
+    }
+
+    @Test
+    void liftsTheLockAfterFifteenMinutes() {
+        failLogins(5, Duration.ofSeconds(1));
+        clock.advance(Duration.ofMinutes(15));
+
+        assertThat(loginWithRightPassword()).isSameAs(tokens);
+    }
+
+    @Test
+    void doesNotCountFailuresOlderThanFifteenMinutes() {
+        failLogins(4, Duration.ofSeconds(1));
+        clock.advance(Duration.ofMinutes(15));
+
+        assertThatThrownBy(this::loginWithWrongPassword).isInstanceOf(InvalidCredentialsException.class);
+        assertThat(ada.getLockedUntil()).isNull();
+        assertThat(ada.getFailedLoginCount()).isEqualTo(1);
+    }
+
+    @Test
+    void resetsTheFailureCountAfterASuccessfulLogin() {
+        failLogins(4, Duration.ofSeconds(1));
+        loginWithRightPassword();
+
+        failLogins(4, Duration.ofSeconds(1));
+        assertThat(ada.getLockedUntil()).isNull();
+    }
+
+    private void failLogins(int times, Duration between) {
+        for (int i = 0; i < times; i++) {
+            try {
+                loginWithWrongPassword();
+            } catch (InvalidCredentialsException | AccountLockedException expected) {
+                // each attempt is meant to fail
+            }
+            clock.advance(between);
+        }
+    }
+
+    private IssuedTokens loginWithWrongPassword() {
+        return service.login(new LoginRequest("ada@example.com", "wrong"));
+    }
+
+    private IssuedTokens loginWithRightPassword() {
+        return service.login(new LoginRequest("ada@example.com", "correct horse"));
+    }
 }

@@ -3,6 +3,7 @@ package com.issuetracker.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -94,6 +96,23 @@ class LoginApiIT {
     @Test
     void treatsAPasswordLongerThanBcryptAcceptsAsWrongCredentials() throws Exception {
         login("ada@example.com", "é".repeat(40)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void locksTheAccountAfterFiveFailedAttemptsAndKeepsItLockedForTheRightPassword() throws Exception {
+        for (int i = 0; i < 4; i++) {
+            login("ada@example.com", "wrong password").andExpect(status().isUnauthorized());
+        }
+
+        login("ada@example.com", "wrong password")
+            .andExpect(status().isTooManyRequests())
+            .andExpect(header().string(HttpHeaders.RETRY_AFTER, "900"))
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Too many failed login attempts. Try again in 15 minutes."));
+        login("ada@example.com", "correct horse").andExpect(status().isTooManyRequests());
+
+        assertThat(users.findById(ada.getId()).orElseThrow().getLockedUntil()).isNotNull();
+        assertThat(refreshTokens.count()).isZero();
     }
 
     @Test

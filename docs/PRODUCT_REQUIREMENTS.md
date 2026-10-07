@@ -230,7 +230,7 @@ The API keeps no server session (JWT only), so more instances can run behind a l
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/auth/register`, `/auth/login`, `/auth/refresh` | Sign up, log in, refresh token |
+| POST | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` | Sign up, log in, rotate the refresh token, log out (revoke the refresh token) |
 | GET | `/users/me`, `/users/me/tickets` | Current user; My tickets |
 | GET, POST | `/projects` | List my projects; create a project |
 | GET, PUT, DELETE | `/projects/{key}` | Read, update, archive a project |

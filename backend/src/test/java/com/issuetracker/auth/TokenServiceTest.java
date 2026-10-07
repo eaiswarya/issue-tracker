@@ -124,6 +124,24 @@ class TokenServiceTest {
         verify(refreshTokens, never()).save(any());
     }
 
+    @Test
+    void revokeMarksTheRefreshTokenRevoked() {
+        RefreshToken token = stored("valid", NOW.plus(Duration.ofDays(1)));
+
+        service.revoke("valid");
+
+        assertThat(token.getRevokedAt()).isEqualTo(NOW);
+    }
+
+    @Test
+    void revokeIgnoresAnUnknownToken() {
+        when(refreshTokens.findByTokenHashForUpdate(any())).thenReturn(Optional.empty());
+
+        service.revoke("unknown");
+
+        verify(refreshTokens, never()).revokeAllActiveForUser(any(), any());
+    }
+
     private RefreshToken stored(String rawToken, Instant expiresAt) {
         RefreshToken token = new RefreshToken(ada, TokenHashes.sha256Hex(rawToken), expiresAt, NOW.minusSeconds(3600));
         when(refreshTokens.findByTokenHashForUpdate(TokenHashes.sha256Hex(rawToken))).thenReturn(Optional.of(token));

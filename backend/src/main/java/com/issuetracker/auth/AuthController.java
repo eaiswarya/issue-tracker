@@ -38,4 +38,10 @@ public class AuthController {
     public TokenResponse refresh(@Valid @RequestBody RefreshRequest request) {
         return TokenResponse.from(tokenService.rotate(request.refreshToken()));
     }
+
+    @PostMapping("/logout")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void logout(@Valid @RequestBody RefreshRequest request) {
+        tokenService.revoke(request.refreshToken());
+    }
 }

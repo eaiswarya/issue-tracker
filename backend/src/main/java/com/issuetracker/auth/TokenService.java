@@ -72,6 +72,14 @@ public class TokenService {
         return issue(user);
     }
 
+    /**
+     * Logout. Unknown or already revoked tokens are ignored, so the response never reveals whether a token exists.
+     */
+    @Transactional
+    public void revoke(String refreshToken) {
+        refreshTokens.findByTokenHashForUpdate(hash(refreshToken)).ifPresent(token -> token.revoke(clock.instant()));
+    }
+
     private String accessToken(User user, Instant now) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuer(JwtConfig.ISSUER)

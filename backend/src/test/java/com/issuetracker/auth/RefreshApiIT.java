@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.ResultActions;
 class RefreshApiIT {
 
     private static final String REFRESH = "/api/v1/auth/refresh";
+    private static final String LOGOUT = "/api/v1/auth/logout";
 
     @Autowired
     private MockMvc mvc;
@@ -114,6 +115,37 @@ class RefreshApiIT {
         mvc.perform(post(REFRESH).contentType(MediaType.APPLICATION_JSON).content("{}"))
             .andExpect(status().isBadRequest())
             .andExpect(jsonPath("$.errors.refreshToken").isNotEmpty());
+    }
+
+    @Test
+    void logoutRevokesTheRefreshToken() throws Exception {
+        String token = loginAndGetRefreshToken();
+
+        logout(token).andExpect(status().isNoContent());
+
+        refresh(token).andExpect(status().isUnauthorized());
+        assertThat(refreshTokens.findAll()).allSatisfy(stored -> assertThat(stored.isRevoked()).isTrue());
+    }
+
+    @Test
+    void logoutIsIdempotentAndDoesNotRevealWhetherATokenExists() throws Exception {
+        String token = loginAndGetRefreshToken();
+        logout(token).andExpect(status().isNoContent());
+
+        logout(token).andExpect(status().isNoContent());
+        logout("not-a-real-token").andExpect(status().isNoContent());
+    }
+
+    @Test
+    void logoutRequiresARefreshToken() throws Exception {
+        mvc.perform(post(LOGOUT).contentType(MediaType.APPLICATION_JSON).content("{}"))
+            .andExpect(status().isBadRequest())
+            .andExpect(jsonPath("$.errors.refreshToken").isNotEmpty());
+    }
+
+    private ResultActions logout(String refreshToken) throws Exception {
+        String body = json.writeValueAsString(new RefreshRequest(refreshToken));
+        return mvc.perform(post(LOGOUT).contentType(MediaType.APPLICATION_JSON).content(body));
     }
 
     private String loginAndGetRefreshToken() throws Exception {

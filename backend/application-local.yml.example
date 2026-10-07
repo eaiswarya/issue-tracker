@@ -7,9 +7,13 @@ spring:
     username: issuetracker
     password: issuetracker
 
-# Dev profile only (-Dspring-boot.run.profiles=dev): seed an ADMIN user on startup.
-# app:
-#   seed:
-#     admin:
-#       email: admin@example.com
-#       password: choose-a-dev-password
+app:
+  # Required: signs access tokens (at least 32 bytes). Or set the JWT_SECRET environment variable.
+  # Generate one with: openssl rand -base64 48
+  auth:
+    jwt-secret: replace-with-a-random-secret-of-at-least-32-bytes
+  # Dev profile only (-Dspring-boot.run.profiles=dev): seed an ADMIN user on startup.
+  # seed:
+  #   admin:
+  #     email: admin@example.com
+  #     password: choose-a-dev-password

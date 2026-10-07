@@ -1,0 +1,4 @@
+# Test-only overrides, loaded on top of src/main/resources/application.yml.
+app:
+  auth:
+    jwt-secret: test-only-jwt-secret-do-not-use-outside-tests-0123456789

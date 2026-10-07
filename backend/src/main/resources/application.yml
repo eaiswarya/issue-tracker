@@ -17,6 +17,17 @@ spring:
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
 
+app:
+  auth:
+    # Required, at least 32 bytes. Set JWT_SECRET in the environment or in application-local.yml; never commit it.
+    jwt-secret: ${JWT_SECRET:}
+    access-token-ttl: 15m
+    refresh-token-ttl: 7d
+    lockout:
+      max-attempts: 5
+      window: 15m
+      duration: 15m
+
 management:
   endpoints:
     web:

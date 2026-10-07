@@ -131,11 +131,11 @@ Each area below lists its user stories and the acceptance criteria that define "
 
 ## Domain model
 
-Eight core entities map one-to-one to PostgreSQL tables. A project has many members and tickets; a ticket has one assignee, one reporter, many comments and many activity entries.
+Eight core entities map one-to-one to PostgreSQL tables. A project has many members and tickets; a ticket has one assignee, one reporter, many comments and many activity entries. A supporting `refresh_tokens` table (id, user_id, token_hash (unique, SHA-256), expires_at, revoked_at, created_at) backs login sessions.
 
 | Entity | Key fields | Relationships |
 | --- | --- | --- |
-| User | id, name, email (unique), password_hash, avatar_url, system_role (ADMIN / USER), active, created_at | Member of many projects |
+| User | id, name, email (unique), password_hash, avatar_url, system_role (ADMIN / USER), active, failed_login_count, failed_login_window_start, locked_until, created_at | Member of many projects; has many refresh tokens |
 | Project | id, key (unique), name, description, archived, ticket_counter, created_by, created_at | Has many members, tickets, labels |
 | ProjectMember | project_id, user_id, role (MANAGER / MEMBER / VIEWER), joined_at | Join table: User to Project |
 | Ticket | id, project_id, number, title, description, type, status, priority, assignee_id, reporter_id, due_date, position, version, deleted, created_at, updated_at | Belongs to a project; has comments, labels, activity |
@@ -230,7 +230,7 @@ The API keeps no server session (JWT only), so more instances can run behind a l
 
 | Method | Path | Purpose |
 | --- | --- | --- |
-| POST | `/auth/register`, `/auth/login`, `/auth/refresh` | Sign up, log in, refresh token |
+| POST | `/auth/register`, `/auth/login`, `/auth/refresh`, `/auth/logout` | Sign up, log in, rotate the refresh token, log out (revoke the refresh token) |
 | GET | `/users/me`, `/users/me/tickets` | Current user; My tickets |
 | GET, POST | `/projects` | List my projects; create a project |
 | GET, PUT, DELETE | `/projects/{key}` | Read, update, archive a project |

@@ -59,6 +59,9 @@ public class LoginService {
             }
             throw new InvalidCredentialsException();
         }
+        if (!user.isActive()) {
+            throw new AccountDeactivatedException();
+        }
         user.recordSuccessfulLogin();
         return tokenService.issue(user);
     }

@@ -15,6 +15,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 class LoginServiceTest {
 
@@ -103,6 +104,21 @@ class LoginServiceTest {
 
         failLogins(4, Duration.ofSeconds(1));
         assertThat(ada.getLockedUntil()).isNull();
+    }
+
+    @Test
+    void refusesADeactivatedUserWhoKnowsThePassword() {
+        ReflectionTestUtils.setField(ada, "active", false);
+
+        assertThatThrownBy(this::loginWithRightPassword).isInstanceOf(AccountDeactivatedException.class);
+        verify(tokenService, never()).issue(any());
+    }
+
+    @Test
+    void givesADeactivatedUserWithAWrongPasswordTheGenericError() {
+        ReflectionTestUtils.setField(ada, "active", false);
+
+        assertThatThrownBy(this::loginWithWrongPassword).isInstanceOf(InvalidCredentialsException.class);
     }
 
     private void failLogins(int times, Duration between) {

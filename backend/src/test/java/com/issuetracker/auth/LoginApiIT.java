@@ -19,6 +19,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -49,6 +50,9 @@ class LoginApiIT {
 
     @Autowired
     private JwtDecoder jwtDecoder;
+
+    @Autowired
+    private JdbcTemplate jdbc;
 
     private User ada;
 
@@ -112,6 +116,18 @@ class LoginApiIT {
         login("ada@example.com", "correct horse").andExpect(status().isTooManyRequests());
 
         assertThat(users.findById(ada.getId()).orElseThrow().getLockedUntil()).isNotNull();
+        assertThat(refreshTokens.count()).isZero();
+    }
+
+    @Test
+    void refusesADeactivatedUser() throws Exception {
+        jdbc.update("update users set active = false where id = ?", ada.getId());
+
+        login("ada@example.com", "correct horse")
+            .andExpect(status().isForbidden())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("This account has been deactivated."));
+        login("ada@example.com", "wrong password").andExpect(status().isUnauthorized());
         assertThat(refreshTokens.count()).isZero();
     }
 

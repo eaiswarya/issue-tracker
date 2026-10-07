@@ -47,6 +47,31 @@ public class TokenService {
         return new IssuedTokens(accessToken(user, now), refreshToken, properties.accessTokenTtl());
     }
 
+    /**
+     * Exchanges a refresh token for a new pair; the old token can never be used again. Presenting a token that was
+     * already revoked means it leaked or was replayed, so every refresh token of that user is revoked. Those
+     * revocations are committed even though the method throws.
+     */
+    @Transactional(noRollbackFor = InvalidRefreshTokenException.class)
+    public IssuedTokens rotate(String refreshToken) {
+        Instant now = clock.instant();
+        RefreshToken current = refreshTokens.findByTokenHashForUpdate(hash(refreshToken))
+            .orElseThrow(InvalidRefreshTokenException::new);
+        User user = current.getUser();
+        if (current.isRevoked()) {
+            refreshTokens.revokeAllActiveForUser(user.getId(), now);
+            throw new InvalidRefreshTokenException();
+        }
+        if (current.isExpiredAt(now)) {
+            throw new InvalidRefreshTokenException();
+        }
+        current.revoke(now);
+        if (!user.isActive()) {
+            throw new InvalidRefreshTokenException();
+        }
+        return issue(user);
+    }
+
     private String accessToken(User user, Instant now) {
         JwtClaimsSet claims = JwtClaimsSet.builder()
             .issuer(JwtConfig.ISSUER)

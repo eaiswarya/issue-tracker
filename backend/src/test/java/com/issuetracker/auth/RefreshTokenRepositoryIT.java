@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.support.TransactionTemplate;
 
 @SpringBootTest
 @Import(TestcontainersConfiguration.class)
@@ -24,6 +25,9 @@ class RefreshTokenRepositoryIT {
 
     @Autowired
     private UserRepository users;
+
+    @Autowired
+    private TransactionTemplate transactions;
 
     private User user;
 
@@ -42,6 +46,17 @@ class RefreshTokenRepositoryIT {
         assertThat(found.getUser().getId()).isEqualTo(user.getId());
         assertThat(found.getExpiresAt()).isEqualTo(NOW.plus(7, ChronoUnit.DAYS));
         assertThat(found.getRevokedAt()).isNull();
+    }
+
+    @Test
+    void findsByHashForUpdateWithItsUser() {
+        refreshTokens.saveAndFlush(new RefreshToken(user, "a".repeat(64), NOW.plus(7, ChronoUnit.DAYS), NOW));
+
+        transactions.executeWithoutResult(status -> {
+            RefreshToken token = refreshTokens.findByTokenHashForUpdate("a".repeat(64)).orElseThrow();
+            assertThat(token.getUser().getEmail()).isEqualTo("ada@example.com");
+            assertThat(refreshTokens.findByTokenHashForUpdate("b".repeat(64))).isEmpty();
+        });
     }
 
     @Test

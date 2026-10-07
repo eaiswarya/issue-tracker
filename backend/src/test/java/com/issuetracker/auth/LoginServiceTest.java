@@ -1,7 +1,12 @@
 package com.issuetracker.auth;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.Duration;
@@ -34,5 +39,22 @@ class LoginServiceTest {
     @Test
     void issuesTokensForTheRightPasswordLookingUpTheNormalisedEmail() {
         assertThat(service.login(new LoginRequest("  Ada@Example.COM ", "correct horse"))).isSameAs(tokens);
+    }
+
+    @Test
+    void rejectsAWrongPassword() {
+        assertThatThrownBy(() -> service.login(new LoginRequest("ada@example.com", "wrong")))
+            .isInstanceOf(InvalidCredentialsException.class);
+        verify(tokenService, never()).issue(any());
+    }
+
+    @Test
+    void rejectsAnUnknownEmailTheSameWayAfterStillCheckingAPassword() {
+        when(users.findForLoginByEmail("nobody@example.com")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> service.login(new LoginRequest("nobody@example.com", "whatever")))
+            .isInstanceOf(InvalidCredentialsException.class);
+        // Spends the same BCrypt time as a real check, so response timing does not reveal unknown emails.
+        verify(passwordEncoder).matches(eq("whatever"), any());
     }
 }

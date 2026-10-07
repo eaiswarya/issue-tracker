@@ -77,6 +77,26 @@ class LoginApiIT {
     }
 
     @Test
+    void answersAWrongPasswordAndAnUnknownEmailIdenticallyWithAGeneric401() throws Exception {
+        String wrongPassword = login("ada@example.com", "wrong password")
+            .andExpect(status().isUnauthorized())
+            .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.detail").value("Invalid email or password."))
+            .andReturn().getResponse().getContentAsString();
+        String unknownEmail = login("nobody@example.com", "wrong password")
+            .andExpect(status().isUnauthorized())
+            .andReturn().getResponse().getContentAsString();
+
+        assertThat(unknownEmail).isEqualTo(wrongPassword);
+        assertThat(refreshTokens.count()).isZero();
+    }
+
+    @Test
+    void treatsAPasswordLongerThanBcryptAcceptsAsWrongCredentials() throws Exception {
+        login("ada@example.com", "é".repeat(40)).andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void rejectsAMissingEmailWithAFieldError() throws Exception {
         login("", "correct horse")
             .andExpect(status().isBadRequest())
